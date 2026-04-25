@@ -195,6 +195,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty{text-align:center;padding:44px 20px;}
 .empty .ei{font-size:38px;margin-bottom:10px;}
 .empty p{font-size:13px;color:var(--tx2);line-height:1.6;}
+.expense-item{cursor:pointer;}
+.expense-item:hover{border-color:var(--bd2);}
+.btn-delete{width:100%;padding:12px;background:transparent;color:#A32D2D;border:0.5px solid #F09595;border-radius:var(--rl);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:7px;}
+.btn-delete:hover{background:#FCEBEB;}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -488,6 +492,69 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <h3>Edit expense</h3>
+  <div class="fr3">
+    <div class="fg"><label>Currency</label>
+      <select id="eCur" onchange="updateEditHint()">
+        <option>CAD</option><option>USD</option><option>EUR</option><option>GBP</option>
+        <option>JPY</option><option>AUD</option><option>MXN</option><option>HKD</option>
+        <option>SGD</option><option>CHF</option><option>CNY</option><option>KRW</option>
+        <option>THB</option><option>PHP</option><option>IDR</option><option>INR</option><option>AED</option>
+      </select>
+    </div>
+    <div class="fg"><label>Amount</label><input type="number" id="eAmt" placeholder="0.00" step="0.01" min="0" oninput="updateEditHint()"></div>
+    <div class="fg"><label>Date</label><input type="date" id="eDate"></div>
+  </div>
+  <div id="editCadHint" style="font-size:11px;color:var(--tx2);margin:-4px 0 7px;display:none;"></div>
+  <div class="fg"><label>Merchant / description</label><input type="text" id="eMerchant" placeholder="e.g. Air Canada, Marriott"></div>
+  <div class="fr">
+    <div class="fg"><label>Category</label>
+      <select id="eCat">
+        <option value="">Select...</option>
+        <option>Food & Dining</option><option>Travel</option><option>Tech & Software</option>
+        <option>Office Supplies</option><option>Client Entertainment</option>
+        <option>Accommodation</option><option>Transportation</option>
+        <option>Events & Conferences</option><option>Marketing</option><option>Other</option>
+      </select>
+    </div>
+    <div class="fg"><label>Company</label>
+      <select id="eCoSel" onchange="handleEditCoSel()">
+        <option value="">Select...</option>
+        <option value="BC Co">BC Co</option><option value="Invert">Invert</option>
+        <option value="Slow Horse LLC">Slow Horse LLC</option><option value="__o__">Other...</option>
+      </select>
+      <input type="text" id="eCoOther" class="other-inp" placeholder="Company name">
+    </div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Fund source</label>
+      <select id="eFundSel" onchange="handleEditFundSel()">
+        <option value="">Select...</option>
+        <option value="Personal CC - Aeroplan">Personal CC - Aeroplan</option>
+        <option value="AMEX">AMEX</option><option value="Cash">Cash</option>
+        <option value="__o__">Other...</option>
+      </select>
+      <input type="text" id="eFundOther" class="other-inp" placeholder="Fund source">
+    </div>
+    <div class="fg"><label>Trip / tag</label><input type="text" id="eTrip" placeholder="e.g. NYC May"></div>
+  </div>
+  <div class="fg"><label>Transaction type</label>
+    <div class="type-tog" style="margin-bottom:0;">
+      <button class="type-btn" id="eBtnR" onclick="setEditType('Reimbursable')">Reimbursable</button>
+      <button class="type-btn" id="eBtnP" onclick="setEditType('Personal')">Personal</button>
+    </div>
+  </div>
+  <div class="fg"><label>Notes</label><input type="text" id="eNotes" placeholder="Extra details..."></div>
+  <button class="btn-pri" onclick="saveEdit()">Save changes</button>
+  <button class="btn-delete" onclick="deleteExpense()">Delete expense</button>
+  <button class="btn-sec" onclick="closeEditModal()">Cancel</button>
+</div>
+</div>
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -977,6 +1044,7 @@ function openModal(){
 }
 function closeModal(){document.getElementById('addModal').classList.remove('open');}
 document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeEditModal();});
 
 // ══════════════════════════════════════════
 //  SAVE EXPENSE
@@ -997,6 +1065,104 @@ function saveExpense(){
   persist(true);
   closeModal();renderList();updateTotal();
   showToast(gaToken?'Saved & syncing to Drive…':'Expense saved!');
+}
+
+// ══════════════════════════════════════════
+//  EDIT & DELETE
+// ══════════════════════════════════════════
+let editingId=null;
+let editTxType='Reimbursable';
+
+function handleEditCoSel(){document.getElementById('eCoOther').style.display=document.getElementById('eCoSel').value==='__o__'?'block':'none';}
+function handleEditFundSel(){document.getElementById('eFundOther').style.display=document.getElementById('eFundSel').value==='__o__'?'block':'none';}
+function getEditCo(){const s=document.getElementById('eCoSel').value;return s==='__o__'?document.getElementById('eCoOther').value.trim():s||'';}
+function getEditFund(){const s=document.getElementById('eFundSel').value;return s==='__o__'?document.getElementById('eFundOther').value.trim():s||'';}
+function setEditType(t){
+  editTxType=t;
+  document.getElementById('eBtnR').className='type-btn'+(t==='Reimbursable'?' ar':'');
+  document.getElementById('eBtnP').className='type-btn'+(t==='Personal'?' ap2':'');
+}
+function updateEditHint(){
+  const a=parseFloat(document.getElementById('eAmt').value),c=document.getElementById('eCur').value;
+  const h=document.getElementById('editCadHint');
+  if(a>0&&c!=='CAD'){h.textContent='≈ CAD '+toCAD(a,c).toFixed(2)+' (approx. rate)';h.style.display='block';}
+  else h.style.display='none';
+}
+
+function openEditModal(id){
+  const e=expenses.find(x=>x.id===id);
+  if(!e) return;
+  editingId=id;
+  document.getElementById('eAmt').value=e.amount;
+  document.getElementById('eCur').value=e.currency||'CAD';
+  document.getElementById('eDate').value=e.date;
+  document.getElementById('eMerchant').value=e.merchant;
+  document.getElementById('eCat').value=e.category||'';
+  document.getElementById('eNotes').value=e.notes||'';
+  document.getElementById('eTrip').value=e.trip||'';
+  document.getElementById('editCadHint').style.display='none';
+  // company
+  const knownCos=['BC Co','Invert','Slow Horse LLC'];
+  if(knownCos.includes(e.company)){
+    document.getElementById('eCoSel').value=e.company;
+    document.getElementById('eCoOther').style.display='none';
+  } else if(e.company){
+    document.getElementById('eCoSel').value='__o__';
+    document.getElementById('eCoOther').value=e.company;
+    document.getElementById('eCoOther').style.display='block';
+  } else {
+    document.getElementById('eCoSel').value='';
+    document.getElementById('eCoOther').style.display='none';
+  }
+  // fund
+  const knownFunds=['Personal CC - Aeroplan','AMEX','Cash'];
+  if(knownFunds.includes(e.fund)){
+    document.getElementById('eFundSel').value=e.fund;
+    document.getElementById('eFundOther').style.display='none';
+  } else if(e.fund){
+    document.getElementById('eFundSel').value='__o__';
+    document.getElementById('eFundOther').value=e.fund;
+    document.getElementById('eFundOther').style.display='block';
+  } else {
+    document.getElementById('eFundSel').value='';
+    document.getElementById('eFundOther').style.display='none';
+  }
+  setEditType(e.txType||'Reimbursable');
+  updateEditHint();
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('open');
+  editingId=null;
+}
+
+function saveEdit(){
+  const amount=parseFloat(document.getElementById('eAmt').value);
+  const merchant=document.getElementById('eMerchant').value.trim();
+  const date=document.getElementById('eDate').value;
+  const category=document.getElementById('eCat').value;
+  const currency=document.getElementById('eCur').value;
+  if(!amount||!merchant||!date||!category){showToast('Fill in amount, merchant, date & category');return;}
+  const idx=expenses.findIndex(x=>x.id===editingId);
+  if(idx===-1) return;
+  const cadEquiv=parseFloat(toCAD(amount,currency).toFixed(2));
+  const trip=document.getElementById('eTrip').value.trim();
+  expenses[idx]={...expenses[idx],amount,currency,cadEquiv,merchant,date,category,company:getEditCo(),fund:getEditFund(),txType:editTxType,trip,notes:document.getElementById('eNotes').value.trim()};
+  addCoOption(getEditCo());addTripOption(trip);
+  persist(true);
+  closeEditModal();renderList();updateTotal();
+  showToast('Expense updated!');
+}
+
+function deleteExpense(){
+  if(!editingId) return;
+  if(!confirm('Delete this expense? This cannot be undone.')) return;
+  expenses=expenses.filter(x=>x.id!==editingId);
+  delete attachments[editingId];
+  persist(true);
+  closeEditModal();renderList();updateTotal();
+  showToast('Expense deleted');
 }
 
 function populateDropdowns(){
@@ -1040,7 +1206,7 @@ function renderList(){
   list.innerHTML=Object.keys(byDate).sort((a,b)=>b.localeCompare(a)).map(date=>{
     const lbl=new Date(date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'short',day:'numeric'});
     const items=byDate[date].map(e=>`
-      <div class="expense-item">
+      <div class="expense-item" onclick="openEditModal('${e.id}')">
         <div class="ei-r1">
           <div class="ei-name">${e.merchant}</div>
           <div><div class="ei-amt">${e.currency} ${e.amount.toFixed(2)}</div>${e.currency!=='CAD'?`<div class="ei-cad">≈ CAD ${e.cadEquiv.toFixed(2)}</div>`:''}</div>
@@ -1055,6 +1221,7 @@ function renderList(){
           ${srcBadge(e.source)}
           ${attachments[e.id]?'<span class="badge b-drive">📎</span>':''}
         </div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:5px;text-align:right;">Tap to edit</div>
       </div>`).join('');
     return `<div class="sec-lbl">${lbl}</div>${items}`;
   }).join('');
