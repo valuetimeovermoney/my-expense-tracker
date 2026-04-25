@@ -196,6 +196,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty .ei{font-size:38px;margin-bottom:10px;}
 .empty p{font-size:13px;color:var(--tx2);line-height:1.6;}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div class="shell">
@@ -225,7 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn-sm btn-green" onclick="saveClientId()">Save</button>
       </div>
       <div class="setup-note" style="margin-top:6px;">
-        Authorized origin must include <strong>null</strong> (for local files) in Google Cloud Console.<br>
+        Authorized JavaScript origin: <strong>https://valuetimeovermoney.github.io</strong><br>
         <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Open Google Cloud Console →</a>
       </div>
     </div>
@@ -282,6 +283,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="screen-list" class="screen active">
       <div id="expenseList"></div>
       <div style="height:6px;"></div>
+      <div style="margin:0 16px 12px;border-left:2px solid var(--green);padding:10px 14px;background:var(--bg);border-radius:0 var(--r) var(--r) 0;border-top:0.5px solid var(--bd);border-right:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);">
+        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Quote of the day</div>
+        <p id="qotd-text" style="font-size:12px;color:var(--tx2);line-height:1.75;font-style:italic;margin-bottom:6px;"></p>
+        <p id="qotd-author" style="font-size:11px;color:var(--tx3);font-weight:500;"></p>
+      </div>
+      <div style="margin:0 16px 14px;border-left:2px solid #854F0B;padding:10px 14px;background:var(--bg);border-radius:0 var(--r) var(--r) 0;border-top:0.5px solid var(--bd);border-right:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);">
+        <p style="font-size:12px;color:var(--tx2);line-height:1.75;font-style:italic;margin-bottom:6px;">"The big money is not in the buying and the selling, but in the waiting...and it's remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid."</p>
+        <p style="font-size:11px;color:var(--tx3);font-weight:500;">— Charlie Munger</p>
+      </div>
       <button class="fab" onclick="openModal()">+ Add expense</button>
     </div>
 
@@ -326,6 +336,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="fundList" style="padding:0 16px 6px;"></div>
       <div class="sec-lbl">By transaction type</div>
       <div id="typeList" style="padding:0 16px 10px;"></div>
+      <div style="margin:4px 16px 16px;border-left:2px solid #378ADD;padding:10px 14px;background:var(--bg);border-radius:0 var(--r) var(--r) 0;border-top:0.5px solid var(--bd);border-right:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);">
+        <p style="font-size:12px;color:var(--tx2);line-height:1.75;font-style:italic;margin-bottom:6px;">"Know what you own, and know why you own it."</p>
+        <p style="font-size:11px;color:var(--tx3);font-weight:500;">— Peter Lynch</p>
+      </div>
     </div>
 
     <!-- EXPORT -->
@@ -358,6 +372,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="btn-exp btn-xlsx" style="width:100%;padding:10px;" onclick="exportXLSX(true)">↓ Export filtered</button>
         </div>
         <div id="expCount" style="font-size:12px;color:var(--tx2);text-align:center;padding:10px 0;"></div>
+        <div style="margin:4px 16px 16px;border-left:2px solid #854F0B;padding:10px 14px;background:var(--bg);border-radius:0 var(--r) var(--r) 0;border-top:0.5px solid var(--bd);border-right:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);">
+          <p style="font-size:12px;color:var(--tx2);line-height:1.75;font-style:italic;margin-bottom:6px;">"The goal is not to be the most successful in the short term, but to be the most enduring."</p>
+          <p style="font-size:11px;color:var(--tx3);font-weight:500;">— Nomad shareholder letters</p>
+        </div>
       </div>
     </div>
   </div>
@@ -471,12 +489,74 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="toast" id="toast"></div>
 
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ══════════════════════════════════════════
-//  CONSTANTS & STATE
+//  QUOTE OF THE DAY
 // ══════════════════════════════════════════
+const QUOTES=[
+  {q:"The big money is not in the buying and the selling, but in the waiting.",a:"Charlie Munger"},
+  {q:"It's remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid.",a:"Charlie Munger"},
+  {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
+  {q:"The goal is not to be the most successful in the short term, but to be the most enduring.",a:"Nomad shareholder letters"},
+  {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
+  {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
+  {q:"Rule No. 1: Never lose money. Rule No. 2: Never forget Rule No. 1.",a:"Warren Buffett"},
+  {q:"In the short run, the market is a voting machine. In the long run, it is a weighing machine.",a:"Benjamin Graham"},
+  {q:"The investor's chief problem — and even his worst enemy — is likely to be himself.",a:"Benjamin Graham"},
+  {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+  {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
+  {q:"The four most dangerous words in investing are: 'This time it's different.'",a:"Sir John Templeton"},
+  {q:"Financial freedom is available to those who learn about it and work for it.",a:"Robert Kiyosaki"},
+  {q:"It's not how much money you make, but how much money you keep, how hard it works for you, and how many generations you keep it for.",a:"Robert Kiyosaki"},
+  {q:"Do not save what is left after spending, but spend what is left after saving.",a:"Warren Buffett"},
+  {q:"The individual investor should act consistently as an investor and not as a speculator.",a:"Benjamin Graham"},
+  {q:"Opportunities come infrequently. When it rains gold, put out the bucket, not the thimble.",a:"Warren Buffett"},
+  {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
+  {q:"Invest for the long haul. Don't get too greedy and don't get too scared.",a:"Shelby M.C. Davis"},
+  {q:"Time in the market beats timing the market.",a:"Ken Fisher"},
+  {q:"The secret to investing is to figure out the value of something — and then pay a lot less.",a:"Joel Greenblatt"},
+  {q:"Spending money to show people how much money you have is the fastest way to have less money.",a:"Morgan Housel"},
+  {q:"Wealth is not about having a lot of money; it's about having a lot of options.",a:"Chris Rock"},
+  {q:"A budget is telling your money where to go instead of wondering where it went.",a:"Dave Ramsey"},
+  {q:"Beware of little expenses; a small leak will sink a great ship.",a:"Benjamin Franklin"},
+  {q:"Every dollar you spend is a vote for the kind of world you want to live in.",a:"Anna Lappe"},
+  {q:"The real measure of your wealth is how much you'd be worth if you lost all your money.",a:"Unknown"},
+  {q:"Compound interest is the eighth wonder of the world. He who understands it, earns it; he who doesn't, pays it.",a:"Albert Einstein (attributed)"},
+  {q:"The habit of saving is itself an education; it fosters every virtue, teaches self-denial, cultivates the sense of order.",a:"T.T. Munger"},
+  {q:"A penny saved is a penny earned.",a:"Benjamin Franklin"},
+  {q:"Wealth consists not in having great possessions, but in having few wants.",a:"Epictetus"},
+  {q:"If you don't find a way to make money while you sleep, you will work until you die.",a:"Warren Buffett"},
+  {q:"The biggest risk of all is not taking one.",a:"Mellody Hobson"},
+  {q:"Investing should be more like watching paint dry or watching grass grow. If you want excitement, take $800 and go to Las Vegas.",a:"Paul Samuelson"},
+  {q:"Never depend on a single income. Make investments to create a second source.",a:"Warren Buffett"},
+  {q:"Frugality includes all the other virtues.",a:"Cicero"},
+  {q:"Too many people spend money they haven't earned to buy things they don't want to impress people they don't like.",a:"Will Rogers"},
+  {q:"The art is not in making money, but in keeping it.",a:"Proverb"},
+  {q:"Wealth is the ability to fully experience life.",a:"Henry David Thoreau"},
+  {q:"Money is a tool. Used properly it makes something beautiful; used wrong, it makes a mess.",a:"Bradley Vinson"},
+  {q:"Formal education will make you a living; self-education will make you a fortune.",a:"Jim Rohn"},
+  {q:"The goal isn't more money. The goal is living life on your own terms.",a:"Chris Brogan"},
+  {q:"It's not your salary that makes you rich, it's your spending habits.",a:"Charles A. Jaffe"},
+  {q:"The more you learn, the more you earn.",a:"Warren Buffett"},
+  {q:"How many millionaires do you know who have become wealthy by investing in savings accounts?",a:"Robert G. Allen"},
+  {q:"Financial fitness is not a pipe dream or a luxury. It is a necessity.",a:"Suze Orman"},
+  {q:"You must gain control over your money or the lack of it will forever control you.",a:"Dave Ramsey"},
+  {q:"The secret of getting ahead is getting started.",a:"Mark Twain"},
+  {q:"Risk comes from not knowing what you are doing.",a:"Warren Buffett"},
+  {q:"The best investment you can make is in yourself.",a:"Warren Buffett"},
+];
+
+function renderQOTD(){
+  const dayIndex=Math.floor(Date.now()/(1000*60*60*24));
+  const q=QUOTES[dayIndex % QUOTES.length];
+  document.getElementById('qotd-text').textContent='\u201C'+q.q+'\u201D';
+  document.getElementById('qotd-author').textContent='\u2014 '+q.a;
+}
+
+
 const FX={CAD:1,USD:1.38,EUR:1.52,GBP:1.78,JPY:0.0093,AUD:0.88,MXN:0.071,HKD:0.177,SGD:1.03,CHF:1.54,CNY:0.19,KRW:0.001,THB:0.041,PHP:0.024,IDR:0.000086,INR:0.017,AED:0.376};
 const CAT_CLS={'Food & Dining':'food','Travel':'travel','Tech & Software':'tech','Office Supplies':'office','Client Entertainment':'client','Accommodation':'travel','Transportation':'travel','Events & Conferences':'client','Marketing':'tech','Other':'other'};
 const CAT_CLR={'Food & Dining':'#EF9F27','Travel':'#378ADD','Tech & Software':'#7F77DD','Office Supplies':'#639922','Client Entertainment':'#D4537E','Other':'#888780','Accommodation':'#1D9E75','Transportation':'#5DCAA5','Events & Conferences':'#D4537E','Marketing':'#AFA9EC'};
@@ -508,9 +588,10 @@ function updateGemPill(){
 }
 
 // ══════════════════════════════════════════
-//  GOOGLE OAUTH (implicit flow — works for local files)
+//  GOOGLE IDENTITY SERVICES (GIS) — compliant OAuth
 // ══════════════════════════════════════════
 const SCOPES='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+let tokenClient=null;
 
 function getClientId(){return localStorage.getItem('goog_client_id')||'';}
 function saveClientId(){
@@ -523,43 +604,52 @@ function showSetupHelp(){
   document.getElementById('clientIdRow').style.display='block';
 }
 
+function initTokenClient(){
+  const cid=getClientId();
+  if(!cid||!window.google) return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:cid,
+    scope:SCOPES,
+    callback:async(resp)=>{
+      if(resp.error){showToast('Sign-in failed: '+resp.error);return;}
+      gaToken=resp.access_token;
+      const exp=Date.now()+(resp.expires_in||3600)*1000;
+      localStorage.setItem('ga_token',gaToken);
+      localStorage.setItem('ga_expiry',String(exp));
+      await loadUserInfo();
+      await ensureDriveFolder();
+      await loadFromDrive();
+    }
+  });
+}
+
 function signInGoogle(){
   const cid=getClientId();
   if(!cid){showSetupHelp();showToast('Paste your OAuth Client ID first');return;}
-  const params=new URLSearchParams({
-    client_id:cid,
-    redirect_uri:window.location.href.split('?')[0],
-    response_type:'token',
-    scope:SCOPES,
-    prompt:'select_account'
-  });
-  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+params;
+  if(!window.google){showToast('Google library still loading — try again in a moment');return;}
+  if(!tokenClient) initTokenClient();
+  tokenClient.requestAccessToken({prompt:'select_account'});
 }
 
 function signOutGoogle(){
+  if(gaToken) google.accounts.oauth2.revoke(gaToken,()=>{});
   gaToken=null;driveFolderId=null;
   localStorage.removeItem('ga_token');localStorage.removeItem('ga_expiry');localStorage.removeItem('drive_folder_id');
   updateDriveUI(false);showToast('Signed out of Google');
 }
 
 async function tryRestoreToken(){
-  const hash=window.location.hash;
-  if(hash.includes('access_token')){
-    const p=new URLSearchParams(hash.slice(1));
-    gaToken=p.get('access_token');
-    const exp=Date.now()+parseInt(p.get('expires_in')||3600)*1000;
-    localStorage.setItem('ga_token',gaToken);localStorage.setItem('ga_expiry',exp);
-    history.replaceState(null,'',window.location.pathname);
-  } else {
-    const saved=localStorage.getItem('ga_token');
-    const expiry=parseInt(localStorage.getItem('ga_expiry')||0);
-    if(saved&&Date.now()<expiry) gaToken=saved;
-  }
-  if(gaToken){
+  const saved=localStorage.getItem('ga_token');
+  const expiry=parseInt(localStorage.getItem('ga_expiry')||'0');
+  if(saved&&Date.now()<expiry){
+    gaToken=saved;
     await loadUserInfo();
     await ensureDriveFolder();
     await loadFromDrive();
   }
+  // init token client once GIS is ready
+  if(window.google) initTokenClient();
+  else window.addEventListener('load',()=>{setTimeout(initTokenClient,500);});
 }
 
 async function loadUserInfo(){
@@ -1077,11 +1167,13 @@ document.getElementById('fFrom').value=new Date(new Date().getFullYear(),0,1).to
 document.getElementById('fTo').value=today();
 updateGemPill();
 // check if client ID already saved
-if(getClientId()) document.getElementById('clientIdInput').value=getClientId();
+if(getClientId()){document.getElementById('clientIdInput').value=getClientId();document.getElementById('clientIdRow').style.display='block';}
 loadLocal();
 populateDropdowns();
 renderList();updateTotal();
-// try to restore Google token (handles redirect back from OAuth)
+// render daily quote
+renderQOTD();
+// restore token and init GIS
 tryRestoreToken();
 setType('Reimbursable');setSrc('photo');
 </script>
