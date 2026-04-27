@@ -83,7 +83,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .b-office{background:var(--green-l);color:var(--green-lt);}
 .b-client{background:var(--pink-l);color:var(--pink-t);}
 .b-other{background:var(--gray-l);color:var(--gray-t);}
-.b-reimb{background:var(--teal-l);color:var(--teal-t);}
+.b-alloc{background:var(--teal-l);color:var(--teal-t);}
+.b-personal{background:var(--gray-l);color:var(--gray-t);}
+.b-recurring{background:var(--amber-l);color:var(--amber-t);}
+.recur-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border-radius:var(--r);margin-bottom:9px;border:0.5px solid var(--bd);}
+.recur-row label{font-size:13px;color:var(--tx);cursor:pointer;flex:1;}
+.recur-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--green);}
+.recur-freq{width:100%;padding:8px 10px;border:0.5px solid var(--bd2);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--tx);font-family:inherit;margin-top:6px;display:none;}
+.recur-section{background:var(--bg);margin:0 16px 8px;border-radius:var(--rl);border:0.5px solid var(--bd);overflow:hidden;}
+.recur-section-hdr{font-size:12px;font-weight:500;color:var(--tx);padding:10px 14px 6px;display:flex;justify-content:space-between;align-items:center;}
+.recur-item{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:0.5px solid var(--bd);}
+.recur-item-name{font-size:13px;color:var(--tx);}
+.recur-item-detail{text-align:right;}
+.recur-item-amt{font-size:13px;font-weight:500;color:var(--tx);}
+.recur-item-freq{font-size:10px;color:var(--tx3);margin-top:1px;}
+.recur-totals{padding:10px 14px;border-top:0.5px solid var(--bd);background:var(--bg2);}
+.recur-total-row{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:3px;}
+.recur-total-row.bold{font-weight:500;color:var(--tx);font-size:13px;}
 .b-personal{background:var(--gray-l);color:var(--gray-t);}
 .b-cc{background:var(--purple-l);color:var(--purple-t);}
 .b-amex{background:var(--amber-l);color:#633806;}
@@ -185,6 +201,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .type-btn{flex:1;padding:8px 6px;font-size:12px;font-weight:500;border-radius:8px;border:0.5px solid var(--bd2);background:transparent;color:var(--tx2);cursor:pointer;font-family:inherit;}
 .type-btn.ar{background:var(--teal-l);color:var(--teal-t);border-color:#0F6E56;}
 .type-btn.ap2{background:var(--gray-l);color:var(--gray-t);border-color:#888780;}
+
 .divider{height:0.5px;background:var(--bd);margin:9px 0;}
 .other-inp{margin-top:5px;display:none;}
 #fileInput,#pdfInput,#manualFileInput{display:none;}
@@ -329,6 +346,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <label>Trip / tag</label>
           <select id="fSumTrip" onchange="renderSummary()"><option value="">All trips</option></select>
         </div>
+        <div class="filter-row" style="margin-top:0;">
+          <div>
+            <label>Display currency</label>
+            <select id="fSumCurrency" onchange="onCurrencyChange()">
+              <option value="CAD">CAD (default)</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="HKD">HKD</option>
+              <option value="SGD">SGD</option>
+              <option value="local">Local (as entered)</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <div style="font-size:11px;color:var(--tx3);padding-bottom:10px;line-height:1.4;" id="fxSourceNote">Historical rates · ECB/BOC via Frankfurter</div>
+          </div>
+        </div>
       </div>
       <div class="filter-badge-wrap" id="filterBadgeWrap" style="display:none;"></div>
       <div class="stat-grid" id="statGrid"></div>
@@ -340,6 +374,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="fundList" style="padding:0 16px 6px;"></div>
       <div class="sec-lbl">By transaction type</div>
       <div id="typeList" style="padding:0 16px 10px;"></div>
+      <div class="sec-lbl">Recurring expenses</div>
+      <div id="recurSection" style="padding:0 0 10px;"></div>
       <div style="margin:4px 16px 16px;border-left:2px solid #378ADD;padding:10px 14px;background:var(--bg);border-radius:0 var(--r) var(--r) 0;border-top:0.5px solid var(--bd);border-right:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);">
         <p style="font-size:12px;color:var(--tx2);line-height:1.75;font-style:italic;margin-bottom:6px;">"Know what you own, and know why you own it."</p>
         <p style="font-size:11px;color:var(--tx3);font-weight:500;">— Peter Lynch</p>
@@ -369,7 +405,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div>
               <label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:3px;">Type</label>
               <select id="expType" style="width:100%;padding:7px 9px;border:0.5px solid var(--bd2);border-radius:8px;font-size:12px;background:var(--bg);color:var(--tx);font-family:inherit;">
-                <option value="">All</option><option value="Reimbursable">Reimbursable</option><option value="Personal">Personal</option>
+                <option value="">All</option><option value="Capital Allocation/Reimbursable">Capital Allocation/Reimbursable</option><option value="Personal">Personal</option>
               </select>
             </div>
           </div>
@@ -432,8 +468,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="divider"></div>
   <div style="font-size:11px;color:var(--tx2);margin-bottom:5px;">Transaction type</div>
   <div class="type-tog">
-    <button class="type-btn" id="btnR" onclick="setType('Reimbursable')">Reimbursable</button>
+    <button class="type-btn" id="btnR" onclick="setType('Capital Allocation/Reimbursable')">Capital/Reimb</button>
     <button class="type-btn" id="btnP" onclick="setType('Personal')">Personal</button>
+    
   </div>
 
   <div class="fr3">
@@ -449,6 +486,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg"><label>Date</label><input type="date" id="fDate"></div>
   </div>
   <div id="cadHint" style="font-size:11px;color:var(--tx2);margin:-4px 0 7px;display:none;"></div>
+  <div id="ccChargedRow" style="display:none;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--amber-l);border-radius:var(--r);border:0.5px solid #EF9F27;">
+      <div style="flex:1;">
+        <div style="font-size:11px;color:var(--amber-t);font-weight:500;margin-bottom:3px;">CC statement amount (CAD)</div>
+        <input type="number" id="fCcCharged" placeholder="e.g. 175.43 — what your bank actually charged" step="0.01" min="0" style="width:100%;padding:7px 10px;border:0.5px solid #EF9F27;border-radius:6px;font-size:13px;background:white;color:#1a1a1a;font-family:inherit;">
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:3px;padding-left:2px;">Includes bank FX rate + foreign transaction fee. Overrides estimated conversion.</div>
+  </div>
 
   <div class="fg"><label>Merchant / description</label><input type="text" id="fMerchant" placeholder="e.g. Air Canada, Marriott, Eventbrite"></div>
   <div class="fr">
@@ -458,7 +504,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <option>Food & Dining</option><option>Travel</option><option>Tech & Software</option>
         <option>Office Supplies</option><option>Client Entertainment</option>
         <option>Accommodation</option><option>Transportation</option>
-        <option>Events & Conferences</option><option>Marketing</option><option>Other</option>
+        <option>Events & Conferences</option><option>Membership</option><option>Marketing</option><option>Other</option>
       </select>
     </div>
     <div class="fg"><label>Company</label>
@@ -475,7 +521,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select id="fFundSel" onchange="handleFundSel()">
         <option value="">Select...</option>
         <option value="Personal CC - Aeroplan">Personal CC - Aeroplan</option>
-        <option value="AMEX">AMEX</option><option value="Cash">Cash</option>
+        <option value="Personal Credit Card">Personal Credit Card</option>
+        <option value="Personal Credit Card - Amex">Personal Credit Card - Amex</option>
+        <option value="Cash">Cash</option>
+        <option value="PayPal">PayPal</option>
+        <option value="Wealthsimple">Wealthsimple</option>
+        <option value="Sha Credit Card - paid back in cash">Sha Credit Card - paid back in cash</option>
         <option value="__o__">Other...</option>
       </select>
       <input type="text" id="fFundOther" class="other-inp" placeholder="Fund source">
@@ -486,6 +537,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="fg"><label>Notes (optional)</label><input type="text" id="fNotes" placeholder="Extra details..."></div>
+  <div class="recur-row">
+    <input type="checkbox" id="fRecurring" onchange="toggleRecurFreq('fRecurFreq',this.checked)">
+    <label for="fRecurring">🔁 This is a recurring expense</label>
+  </div>
+  <select id="fRecurFreq" class="recur-freq" style="margin-top:-4px;margin-bottom:9px;">
+    <option value="monthly">Monthly</option>
+    <option value="quarterly">Quarterly</option>
+    <option value="yearly">Yearly</option>
+  </select>
   <button class="btn-pri" onclick="saveExpense()">Save expense</button>
   <button class="btn-sec" onclick="closeModal()">Cancel</button>
 </div>
@@ -511,6 +571,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="fg"><label>Date</label><input type="date" id="eDate"></div>
   </div>
   <div id="editCadHint" style="font-size:11px;color:var(--tx2);margin:-4px 0 7px;display:none;"></div>
+  <div id="editCcChargedRow" style="display:none;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--amber-l);border-radius:var(--r);border:0.5px solid #EF9F27;">
+      <div style="flex:1;">
+        <div style="font-size:11px;color:var(--amber-t);font-weight:500;margin-bottom:3px;">CC statement amount (CAD)</div>
+        <input type="number" id="eCcCharged" placeholder="e.g. 175.43 — what your bank actually charged" step="0.01" min="0" style="width:100%;padding:7px 10px;border:0.5px solid #EF9F27;border-radius:6px;font-size:13px;background:white;color:#1a1a1a;font-family:inherit;">
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:3px;padding-left:2px;">Includes bank FX rate + foreign transaction fee. Overrides estimated conversion.</div>
+  </div>
   <div class="fg"><label>Merchant / description</label><input type="text" id="eMerchant" placeholder="e.g. Air Canada, Marriott"></div>
   <div class="fr">
     <div class="fg"><label>Category</label>
@@ -519,7 +588,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <option>Food & Dining</option><option>Travel</option><option>Tech & Software</option>
         <option>Office Supplies</option><option>Client Entertainment</option>
         <option>Accommodation</option><option>Transportation</option>
-        <option>Events & Conferences</option><option>Marketing</option><option>Other</option>
+        <option>Events & Conferences</option><option>Membership</option><option>Marketing</option><option>Other</option>
       </select>
     </div>
     <div class="fg"><label>Company</label>
@@ -536,7 +605,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <select id="eFundSel" onchange="handleEditFundSel()">
         <option value="">Select...</option>
         <option value="Personal CC - Aeroplan">Personal CC - Aeroplan</option>
-        <option value="AMEX">AMEX</option><option value="Cash">Cash</option>
+        <option value="Personal Credit Card">Personal Credit Card</option>
+        <option value="Personal Credit Card - Amex">Personal Credit Card - Amex</option>
+        <option value="Cash">Cash</option>
+        <option value="PayPal">PayPal</option>
+        <option value="Wealthsimple">Wealthsimple</option>
+        <option value="Sha Credit Card - paid back in cash">Sha Credit Card - paid back in cash</option>
         <option value="__o__">Other...</option>
       </select>
       <input type="text" id="eFundOther" class="other-inp" placeholder="Fund source">
@@ -545,11 +619,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="fg"><label>Transaction type</label>
     <div class="type-tog" style="margin-bottom:0;">
-      <button class="type-btn" id="eBtnR" onclick="setEditType('Reimbursable')">Reimbursable</button>
+      <button class="type-btn" id="eBtnR" onclick="setEditType('Capital Allocation/Reimbursable')">Capital/Reimb</button>
       <button class="type-btn" id="eBtnP" onclick="setEditType('Personal')">Personal</button>
+      
     </div>
   </div>
   <div class="fg"><label>Notes</label><input type="text" id="eNotes" placeholder="Extra details..."></div>
+  <div class="recur-row">
+    <input type="checkbox" id="eRecurring" onchange="toggleRecurFreq('eRecurFreq',this.checked)">
+    <label for="eRecurring">🔁 This is a recurring expense</label>
+  </div>
+  <select id="eRecurFreq" class="recur-freq" style="margin-top:-4px;margin-bottom:9px;">
+    <option value="monthly">Monthly</option>
+    <option value="quarterly">Quarterly</option>
+    <option value="yearly">Yearly</option>
+  </select>
+  <div class="fg">
+    <label>Receipt image (optional)</label>
+    <div id="editAttZone" style="border:1.5px dashed var(--bd2);border-radius:var(--r);padding:10px;text-align:center;cursor:pointer;background:var(--bg2);" onclick="document.getElementById('editFileInput').click()">
+      <input type="file" id="editFileInput" accept="image/*" onchange="handleEditPhoto(event)" style="display:none;">
+      <div id="editAttPreview"><div style="font-size:11px;color:var(--tx3);">Tap to attach or replace receipt image</div></div>
+    </div>
+  </div>
   <button class="btn-pri" onclick="saveEdit()">Save changes</button>
   <button class="btn-delete" onclick="deleteExpense()">Delete expense</button>
   <button class="btn-sec" onclick="closeEditModal()">Cancel</button>
@@ -625,10 +716,10 @@ function renderQOTD(){
 
 
 const FX={CAD:1,USD:1.38,EUR:1.52,GBP:1.78,JPY:0.0093,AUD:0.88,MXN:0.071,HKD:0.177,SGD:1.03,CHF:1.54,CNY:0.19,KRW:0.001,THB:0.041,PHP:0.024,IDR:0.000086,INR:0.017,AED:0.376};
-const CAT_CLS={'Food & Dining':'food','Travel':'travel','Tech & Software':'tech','Office Supplies':'office','Client Entertainment':'client','Accommodation':'travel','Transportation':'travel','Events & Conferences':'client','Marketing':'tech','Other':'other'};
-const CAT_CLR={'Food & Dining':'#EF9F27','Travel':'#378ADD','Tech & Software':'#7F77DD','Office Supplies':'#639922','Client Entertainment':'#D4537E','Other':'#888780','Accommodation':'#1D9E75','Transportation':'#5DCAA5','Events & Conferences':'#D4537E','Marketing':'#AFA9EC'};
+const CAT_CLS={'Food & Dining':'food','Travel':'travel','Tech & Software':'tech','Office Supplies':'office','Client Entertainment':'client','Accommodation':'travel','Transportation':'travel','Events & Conferences':'client','Membership':'cc','Marketing':'tech','Other':'other'};
+const CAT_CLR={'Food & Dining':'#EF9F27','Travel':'#378ADD','Tech & Software':'#7F77DD','Office Supplies':'#639922','Client Entertainment':'#D4537E','Other':'#888780','Accommodation':'#1D9E75','Transportation':'#5DCAA5','Events & Conferences':'#D4537E','Membership':'#534AB7','Marketing':'#AFA9EC'};
 
-let expenses=[], attachments={}, curSrc='photo', txType='Reimbursable';
+let expenses=[], attachments={}, curSrc='photo', txType='Capital Allocation/Reimbursable';
 let attB64=null, attType=null, attName=null;
 
 // Google Drive state
@@ -893,8 +984,16 @@ function toCAD(a,c){return a*(FX[c]||1);}
 function updateHint(){
   const a=parseFloat(document.getElementById('fAmt').value),c=document.getElementById('fCur').value;
   const h=document.getElementById('cadHint');
-  if(a>0&&c!=='CAD'){h.textContent='≈ CAD '+toCAD(a,c).toFixed(2)+' (approx. rate)';h.style.display='block';}
-  else h.style.display='none';
+  const ccRow=document.getElementById('ccChargedRow');
+  if(a>0&&c!=='CAD'){
+    h.textContent='≈ CAD '+toCAD(a,c).toFixed(2)+' (approx. rate — or enter CC amount below)';
+    h.style.display='block';
+    ccRow.style.display='block';
+  } else {
+    h.style.display='none';
+    ccRow.style.display='none';
+    document.getElementById('fCcCharged').value='';
+  }
 }
 function handleCoSel(){document.getElementById('fCoOther').style.display=document.getElementById('fCoSel').value==='__o__'?'block':'none';}
 function handleFundSel(){document.getElementById('fFundOther').style.display=document.getElementById('fFundSel').value==='__o__'?'block':'none';}
@@ -1018,7 +1117,7 @@ function setSrc(s){
 }
 function setType(t){
   txType=t;
-  document.getElementById('btnR').className='type-btn'+(t==='Reimbursable'?' ar':'');
+  document.getElementById('btnR').className='type-btn'+(t==='Capital Allocation/Reimbursable'?' ar':'');
   document.getElementById('btnP').className='type-btn'+(t==='Personal'?' ap2':'');
 }
 
@@ -1038,9 +1137,13 @@ function openModal(){
   document.getElementById('fCoSel').value='';document.getElementById('fCoOther').value='';document.getElementById('fCoOther').style.display='none';
   document.getElementById('fFundSel').value='';document.getElementById('fFundOther').value='';document.getElementById('fFundOther').style.display='none';
   document.getElementById('fCur').value='CAD';document.getElementById('cadHint').style.display='none';
+  document.getElementById('ccChargedRow').style.display='none';
+  document.getElementById('fCcCharged').value='';
   document.getElementById('aiStatus').style.display='none';
   document.getElementById('emailText').value='';document.getElementById('emailBtnTxt').textContent='Scan with AI →';
-  setType('Reimbursable');setSrc('photo');
+  document.getElementById('fRecurring').checked=false;
+  document.getElementById('fRecurFreq').style.display='none';
+  setType('Capital Allocation/Reimbursable');setSrc('photo');
 }
 function closeModal(){document.getElementById('addModal').classList.remove('open');}
 document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
@@ -1057,9 +1160,12 @@ function saveExpense(){
   const currency=document.getElementById('fCur').value;
   if(!amount||!merchant||!date||!category){showToast('Fill in amount, merchant, date & category');return;}
   const id=Date.now().toString();
-  const cadEquiv=parseFloat(toCAD(amount,currency).toFixed(2));
+  const ccCharged=parseFloat(document.getElementById('fCcCharged').value)||0;
+  const cadEquiv=ccCharged>0?parseFloat(ccCharged.toFixed(2)):parseFloat(toCAD(amount,currency).toFixed(2));
   const trip=document.getElementById('fTrip').value.trim();
-  expenses.unshift({id,amount,currency,cadEquiv,merchant,date,category,company:getCo(),fund:getFund(),txType,source:curSrc,trip,notes:document.getElementById('fNotes').value.trim()});
+  const recurring=document.getElementById('fRecurring').checked;
+  const recurFreq=recurring?document.getElementById('fRecurFreq').value:'';
+  expenses.unshift({id,amount,currency,cadEquiv,ccCharged:ccCharged||null,merchant,date,category,company:getCo(),fund:getFund(),txType,source:curSrc,trip,notes:document.getElementById('fNotes').value.trim(),recurring,recurFreq});
   if(attB64) attachments[id]={b64:attB64,type:attType,name:attName||'attachment',synced:false};
   addCoOption(getCo());addTripOption(trip);
   persist(true);
@@ -1071,7 +1177,7 @@ function saveExpense(){
 //  EDIT & DELETE
 // ══════════════════════════════════════════
 let editingId=null;
-let editTxType='Reimbursable';
+let editTxType='Capital Allocation/Reimbursable';
 
 function handleEditCoSel(){document.getElementById('eCoOther').style.display=document.getElementById('eCoSel').value==='__o__'?'block':'none';}
 function handleEditFundSel(){document.getElementById('eFundOther').style.display=document.getElementById('eFundSel').value==='__o__'?'block':'none';}
@@ -1079,14 +1185,35 @@ function getEditCo(){const s=document.getElementById('eCoSel').value;return s===
 function getEditFund(){const s=document.getElementById('eFundSel').value;return s==='__o__'?document.getElementById('eFundOther').value.trim():s||'';}
 function setEditType(t){
   editTxType=t;
-  document.getElementById('eBtnR').className='type-btn'+(t==='Reimbursable'?' ar':'');
+  document.getElementById('eBtnR').className='type-btn'+(t==='Capital Allocation/Reimbursable'?' ar':'');
   document.getElementById('eBtnP').className='type-btn'+(t==='Personal'?' ap2':'');
 }
 function updateEditHint(){
   const a=parseFloat(document.getElementById('eAmt').value),c=document.getElementById('eCur').value;
   const h=document.getElementById('editCadHint');
-  if(a>0&&c!=='CAD'){h.textContent='≈ CAD '+toCAD(a,c).toFixed(2)+' (approx. rate)';h.style.display='block';}
-  else h.style.display='none';
+  const ccRow=document.getElementById('editCcChargedRow');
+  if(a>0&&c!=='CAD'){
+    h.textContent='≈ CAD '+toCAD(a,c).toFixed(2)+' (approx. rate — or enter CC amount below)';
+    h.style.display='block';
+    ccRow.style.display='block';
+  } else {
+    h.style.display='none';
+    ccRow.style.display='none';
+  }
+}
+
+function handleEditPhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const b64=ev.target.result.split(',')[1];
+    attachments[editingId]={b64,type:file.type||'image/jpeg',name:file.name||'photo.jpg',synced:false};
+    document.getElementById('editAttZone').style.borderColor='var(--green)';
+    document.getElementById('editAttZone').style.borderStyle='solid';
+    document.getElementById('editAttPreview').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;">`;
+    showToast('Receipt image attached');
+  };
+  reader.readAsDataURL(file);
 }
 
 function openEditModal(id){
@@ -1115,7 +1242,7 @@ function openEditModal(id){
     document.getElementById('eCoOther').style.display='none';
   }
   // fund
-  const knownFunds=['Personal CC - Aeroplan','AMEX','Cash'];
+  const knownFunds=['Personal CC - Aeroplan','Personal Credit Card','Personal Credit Card - Amex','Cash','PayPal','Wealthsimple','Sha Credit Card - paid back in cash'];
   if(knownFunds.includes(e.fund)){
     document.getElementById('eFundSel').value=e.fund;
     document.getElementById('eFundOther').style.display='none';
@@ -1127,8 +1254,31 @@ function openEditModal(id){
     document.getElementById('eFundSel').value='';
     document.getElementById('eFundOther').style.display='none';
   }
-  setEditType(e.txType||'Reimbursable');
+  setEditType(e.txType||'Capital Allocation/Reimbursable');
   updateEditHint();
+  // CC charged
+  document.getElementById('eCcCharged').value=e.ccCharged||'';
+  if(e.currency!=='CAD'){document.getElementById('editCcChargedRow').style.display='block';}
+  else{document.getElementById('editCcChargedRow').style.display='none';}
+  // recurring
+  const isRecurring=!!e.recurring;
+  document.getElementById('eRecurring').checked=isRecurring;
+  document.getElementById('eRecurFreq').style.display=isRecurring?'block':'none';
+  if(e.recurFreq) document.getElementById('eRecurFreq').value=e.recurFreq;
+  // show existing attachment if any
+  const att=attachments[id];
+  const zone=document.getElementById('editAttZone');
+  const preview=document.getElementById('editAttPreview');
+  if(att&&att.b64&&att.type&&att.type.startsWith('image/')){
+    zone.style.borderColor='var(--green)';zone.style.borderStyle='solid';
+    preview.innerHTML=`<img src="data:${att.type};base64,${att.b64}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;"><div style="font-size:10px;color:var(--tx3);margin-top:4px;">Tap to replace</div>`;
+  } else if(att&&att.name){
+    zone.style.borderColor='#185FA5';zone.style.borderStyle='solid';
+    preview.innerHTML=`<div style="font-size:11px;color:var(--blue-t);">📎 ${att.name} attached · Tap to replace with image</div>`;
+  } else {
+    zone.style.borderColor='var(--bd2)';zone.style.borderStyle='dashed';
+    preview.innerHTML='<div style="font-size:11px;color:var(--tx3);">Tap to attach or replace receipt image</div>';
+  }
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -1146,9 +1296,12 @@ function saveEdit(){
   if(!amount||!merchant||!date||!category){showToast('Fill in amount, merchant, date & category');return;}
   const idx=expenses.findIndex(x=>x.id===editingId);
   if(idx===-1) return;
-  const cadEquiv=parseFloat(toCAD(amount,currency).toFixed(2));
+  const ccCharged=parseFloat(document.getElementById('eCcCharged').value)||0;
+  const cadEquiv=ccCharged>0?parseFloat(ccCharged.toFixed(2)):parseFloat(toCAD(amount,currency).toFixed(2));
   const trip=document.getElementById('eTrip').value.trim();
-  expenses[idx]={...expenses[idx],amount,currency,cadEquiv,merchant,date,category,company:getEditCo(),fund:getEditFund(),txType:editTxType,trip,notes:document.getElementById('eNotes').value.trim()};
+  const recurring=document.getElementById('eRecurring').checked;
+  const recurFreq=recurring?document.getElementById('eRecurFreq').value:'';
+  expenses[idx]={...expenses[idx],amount,currency,cadEquiv,ccCharged:ccCharged||null,merchant,date,category,company:getEditCo(),fund:getEditFund(),txType:editTxType,trip,notes:document.getElementById('eNotes').value.trim(),recurring,recurFreq};
   addCoOption(getEditCo());addTripOption(trip);
   persist(true);
   closeEditModal();renderList();updateTotal();
@@ -1198,6 +1351,37 @@ function fundCls(f){
   return 'badge b-other';
 }
 
+function toggleRecurFreq(selId,checked){
+  document.getElementById(selId).style.display=checked?'block':'none';
+}
+
+function renderRecurring(data){
+  const el=document.getElementById('recurSection');
+  if(!el) return;
+  const recur=data.filter(e=>e.recurring&&e.recurFreq);
+  if(!recur.length){el.innerHTML='<div style="padding:0 16px;font-size:12px;color:var(--tx2);">No recurring expenses flagged yet.</div>';return;}
+  const groups={monthly:[],quarterly:[],yearly:[]};
+  recur.forEach(e=>{if(groups[e.recurFreq])groups[e.recurFreq].push(e);});
+  const mult={monthly:12,quarterly:4,yearly:1};
+  let totalAnnual=0;
+  const row=e=>`<div class="recur-item"><div class="recur-item-name">${e.merchant}</div><div class="recur-item-detail"><div class="recur-item-amt">CAD ${e.cadEquiv.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="recur-item-freq">${e.company||''}</div></div></div>`;
+  let html='<div class="recur-section">';
+  ['monthly','quarterly','yearly'].forEach(freq=>{
+    const list=groups[freq];if(!list.length)return;
+    const sub=list.reduce((s,e)=>s+e.cadEquiv,0);
+    totalAnnual+=sub*mult[freq];
+    const lbl=freq==='monthly'?'mo':freq==='quarterly'?'qtr':'yr';
+    html+=`<div class="recur-section-hdr"><span>${freq.charAt(0).toUpperCase()+freq.slice(1)}</span><span style="font-size:12px;color:var(--tx2);">CAD ${sub.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})} / ${lbl}</span></div>`;
+    list.forEach(e=>{html+=row(e);});
+  });
+  html+=`<div class="recur-totals">
+    <div class="recur-total-row"><span>Monthly commitment</span><span>CAD ${(totalAnnual/12).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+    <div class="recur-total-row"><span>Quarterly commitment</span><span>CAD ${(totalAnnual/4).toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+    <div class="recur-total-row bold"><span>Annual commitment</span><span>CAD ${totalAnnual.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+  </div></div>`;
+  el.innerHTML=html;
+}
+
 function renderList(){
   const list=document.getElementById('expenseList');
   if(!expenses.length){list.innerHTML='<div class="empty"><div class="ei">🧾</div><p>No expenses yet.<br>Click "+ Add expense" to get started.</p></div>';return;}
@@ -1205,68 +1389,185 @@ function renderList(){
   expenses.forEach(e=>{if(!byDate[e.date])byDate[e.date]=[];byDate[e.date].push(e);});
   list.innerHTML=Object.keys(byDate).sort((a,b)=>b.localeCompare(a)).map(date=>{
     const lbl=new Date(date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'short',day:'numeric'});
-    const items=byDate[date].map(e=>`
+    const items=byDate[date].map(e=>{
+      const dispCur=document.getElementById('fSumCurrency')?.value||'CAD';
+      const showConv=dispCur!=='local'&&dispCur!==e.currency;
+      let convLine='';
+      if(showConv&&dispCur==='CAD'&&e.currency!=='CAD'){
+        convLine=`<div class="ei-cad">≈ CAD ${e.cadEquiv.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+      } else if(showConv&&dispCur!=='CAD'){
+        const rate=getConvRate(e.date,dispCur);
+        const convAmt=e.cadEquiv*rate;
+        convLine=`<div class="ei-cad">≈ ${dispCur} ${convAmt.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+      } else if(e.currency!=='CAD'){
+        convLine=`<div class="ei-cad">≈ CAD ${e.cadEquiv.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+      }
+      return `
       <div class="expense-item" onclick="openEditModal('${e.id}')">
         <div class="ei-r1">
           <div class="ei-name">${e.merchant}</div>
-          <div><div class="ei-amt">${e.currency} ${e.amount.toFixed(2)}</div>${e.currency!=='CAD'?`<div class="ei-cad">≈ CAD ${e.cadEquiv.toFixed(2)}</div>`:''}</div>
+          <div><div class="ei-amt">${e.currency} ${e.amount.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>${convLine}</div>
         </div>
         <div class="ei-r2">
           <span class="badge b-${CAT_CLS[e.category]||'other'}">${e.category}</span>
           <span class="ei-date">${e.company||''}${e.trip?' · '+e.trip:''}</span>
         </div>
         <div class="ei-r3">
-          ${e.txType?`<span class="badge ${e.txType==='Reimbursable'?'b-reimb':'b-personal'}">${e.txType}</span>`:''}
+          ${e.txType?`<span class="badge ${e.txType==='Capital Allocation/Reimbursable'?'b-alloc':'b-personal'}">${e.txType}</span>`:''}
           ${e.fund?`<span class="${fundCls(e.fund)}">${e.fund}</span>`:''}
           ${srcBadge(e.source)}
+          ${e.recurring?`<span class="badge b-recurring">🔁 ${e.recurFreq||'recurring'}</span>`:''}
           ${attachments[e.id]?'<span class="badge b-drive">📎</span>':''}
         </div>
         <div style="font-size:10px;color:var(--tx3);margin-top:5px;text-align:right;">Tap to edit</div>
-      </div>`).join('');
+      </div>`;}).join('');
     return `<div class="sec-lbl">${lbl}</div>${items}`;
   }).join('');
 }
 function updateTotal(){
-  document.getElementById('totalAmt').textContent='CAD '+expenses.reduce((s,e)=>s+e.cadEquiv,0).toFixed(2);
+  const total=expenses.reduce((s,e)=>s+e.cadEquiv,0);
+  document.getElementById('totalAmt').textContent='CAD '+total.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
 // ══════════════════════════════════════════
-//  RENDER SUMMARY
+//  HISTORICAL FX — Frankfurter (ECB/BOC, free, no key)
 // ══════════════════════════════════════════
-function renderSummary(){
+async function onCurrencyChange(){
+  const cur=document.getElementById('fSumCurrency').value;
+  if(cur!=='CAD'&&cur!=='local'){
+    document.getElementById('fxSourceNote').textContent='Fetching historical rates...';
+    await convertAllToDisplay(expenses,cur);
+    document.getElementById('fxSourceNote').textContent='Historical rates · ECB/BOC via Frankfurter';
+  }
+  renderSummary();
+  renderList();
+}
+
+function getConvRate(date,cur){
+  if(cur==='CAD') return 1;
+  const key=`${date}_${cur}`;
+  return fxCache[key]||FX_FROM_CAD_STATIC[cur]||1;
+}
+
+// Fallback static rates (1 CAD = X foreign) — used until Frankfurter loads
+const FX_FROM_CAD_STATIC={CAD:1,USD:0.7246,EUR:0.6579,GBP:0.5618,JPY:107.53,AUD:1.1364,MXN:14.085,HKD:5.649,SGD:0.9709,CHF:0.6494,CNY:5.263,KRW:1000,THB:24.39,PHP:41.67,IDR:11628,INR:58.82,AED:2.660};
+let fxCache={};  // {date: {USD:x, EUR:x, ...}}
+let fxCacheConverted={};  // per-expense converted amounts keyed by "id_currency"
+
+async function fetchHistoricalRate(date,toCurrency){
+  if(toCurrency==='CAD') return 1;
+  const key=`${date}_${toCurrency}`;
+  if(fxCache[key]!==undefined) return fxCache[key];
+  try{
+    const r=await fetch(`https://api.frankfurter.app/${date}?from=CAD&to=${toCurrency}`);
+    const d=await r.json();
+    const rate=d.rates?.[toCurrency]||FX_FROM_CAD_STATIC[toCurrency]||1;
+    fxCache[key]=rate;
+    return rate;
+  }catch(e){
+    return FX_FROM_CAD_STATIC[toCurrency]||1;
+  }
+}
+
+async function convertAllToDisplay(data,toCurrency){
+  if(toCurrency==='local'||toCurrency==='CAD') return null;
+  const results={};
+  const uniqueDates=[...new Set(data.map(e=>e.date))];
+  await Promise.all(uniqueDates.map(async date=>{
+    const rate=await fetchHistoricalRate(date,toCurrency);
+    data.filter(e=>e.date===date).forEach(e=>{
+      results[e.id]=parseFloat((e.cadEquiv*rate).toFixed(2));
+    });
+  }));
+  return results;
+}
+
+function fmt(val){
+  return val.toLocaleString('en-CA',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+async function renderSummary(){
   const data=filterByPeriod(expenses);
   const period=document.getElementById('fPeriod').value;
   const co=document.getElementById('fSumCo').value;
   const trip=document.getElementById('fSumTrip').value;
+  const dispCur=document.getElementById('fSumCurrency')?.value||'CAD';
   const pLabels={'all':'All time','thismonth':'This month','lastmonth':'Last month','thisquarter':'This quarter','thisyear':'This year','custom':'Custom range'};
   const bw=document.getElementById('filterBadgeWrap');
   const parts=[];if(period!=='all')parts.push(pLabels[period]);if(co)parts.push(co);if(trip)parts.push('Trip: '+trip);
+  if(dispCur!=='local'&&dispCur!=='CAD')parts.push('Showing '+dispCur);
   if(parts.length){bw.style.display='block';bw.innerHTML=`<span class="filter-badge">Filtered: ${parts.join(' · ')}</span>`;}
   else bw.style.display='none';
-  const total=data.reduce((s,e)=>s+e.cadEquiv,0);
-  const n=data.length;
+
+  // show loading state while fetching FX
+  const curLabel=dispCur==='local'?'local currencies':dispCur;
+  let convertedMap=null;
+  if(dispCur!=='CAD'&&dispCur!=='local'){
+    document.getElementById('statGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;font-size:12px;color:var(--tx2);padding:12px;">Loading historical FX rates...</div>`;
+    convertedMap=await convertAllToDisplay(data,dispCur);
+  }
+
+  // build aggregated maps using CAD as base
   const catMap={},coMap={},fundMap={},typeMap={};
   data.forEach(e=>{
+    const fund=(e.fund||'Unspecified').replace(/^AMEX$/i,'Personal Credit Card - Amex');
     catMap[e.category]=(catMap[e.category]||0)+e.cadEquiv;
     coMap[e.company||'Unassigned']=(coMap[e.company||'Unassigned']||0)+e.cadEquiv;
-    fundMap[e.fund||'Unspecified']=(fundMap[e.fund||'Unspecified']||0)+e.cadEquiv;
+    fundMap[fund]=(fundMap[fund]||0)+e.cadEquiv;
     typeMap[e.txType||'Unspecified']=(typeMap[e.txType||'Unspecified']||0)+e.cadEquiv;
   });
+
+  const totalCAD=data.reduce((s,e)=>s+e.cadEquiv,0);
+
+  // display conversion function
+  const toDisp=cadVal=>{
+    if(dispCur==='local'||dispCur==='CAD') return cadVal;
+    return cadVal*(FX_FROM_CAD_STATIC[dispCur]||1);
+  };
+  // if we have real historical rates, use weighted avg for aggregate display
+  const getDispTotal=()=>{
+    if(!convertedMap) return toDisp(totalCAD);
+    return Object.values(convertedMap).reduce((s,v)=>s+v,0);
+  };
+  const getDispCatAmt=(cadAmt)=>{
+    if(!convertedMap) return toDisp(cadAmt);
+    // use proportional approach: cat% * total_in_disp
+    const totalDisp=getDispTotal();
+    return totalCAD>0?(cadAmt/totalCAD)*totalDisp:0;
+  };
+
+  const dispTotal=getDispTotal();
+  const n=data.length;
+  const allocTotal=typeMap['Capital Allocation/Reimbursable']||0;
+  const personalTotal=typeMap['Personal']||0;
+  const rateNote=convertedMap?'historical rates':'approx. rate';
+
   document.getElementById('statGrid').innerHTML=`
-    <div class="stat-card"><div class="stat-lbl">Total (CAD)</div><div class="stat-val">$${total.toFixed(2)}</div><div class="stat-sub">${n} expense${n!==1?'s':''}</div></div>
-    <div class="stat-card"><div class="stat-lbl">Average</div><div class="stat-val">$${n?(total/n).toFixed(2):'0.00'}</div><div class="stat-sub">per expense</div></div>
-    <div class="stat-card"><div class="stat-lbl">Reimbursable</div><div class="stat-val">$${(typeMap['Reimbursable']||0).toFixed(2)}</div><div class="stat-sub">of filtered</div></div>
-    <div class="stat-card"><div class="stat-lbl">Personal</div><div class="stat-val">$${(typeMap['Personal']||0).toFixed(2)}</div><div class="stat-sub">of filtered</div></div>`;
+    <div class="stat-card"><div class="stat-lbl">Total (${curLabel})</div><div class="stat-val">${fmt(dispCur==='local'?totalCAD:dispTotal)}</div><div class="stat-sub">${n} expense${n!==1?'s':''} · ${rateNote}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Average (${curLabel})</div><div class="stat-val">${n?fmt(dispCur==='local'?totalCAD/n:dispTotal/n):'0.00'}</div><div class="stat-sub">per expense</div></div>
+    <div class="stat-card"><div class="stat-lbl">Capital/Reimb</div><div class="stat-val">${fmt(getDispCatAmt(allocTotal))}</div><div class="stat-sub">${totalCAD>0?((allocTotal/totalCAD)*100).toFixed(1)+'%':'-'}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Personal</div><div class="stat-val">${fmt(getDispCatAmt(personalTotal))}</div><div class="stat-sub">${totalCAD>0?((personalTotal/totalCAD)*100).toFixed(1)+'%':'-'}</div></div>`;
+
   const sorted=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
   const max=sorted[0]?.[1]||1;
-  document.getElementById('catBars').innerHTML=sorted.map(([cat,amt])=>`
-    <div class="cat-row"><div class="cat-name">${cat.split(' ')[0]}</div>
-    <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(amt/max*100).toFixed(0)}%;background:${CAT_CLR[cat]||'#888780'}"></div></div>
-    <div class="cat-amt">$${amt.toFixed(0)}</div></div>`).join('')||'<div class="no-data">No data</div>';
-  const row=(k,v)=>`<div class="sum-list-item"><span>${k}</span><span>$${v.toFixed(2)}</span></div>`;
+  document.getElementById('catBars').innerHTML=sorted.map(([cat,cadAmt])=>{
+    const dispAmt=getDispCatAmt(cadAmt);
+    const pct=totalCAD>0?((cadAmt/totalCAD)*100).toFixed(1):'0.0';
+    return `<div style="margin-bottom:10px;">
+      <div class="cat-row" style="margin-bottom:2px;">
+        <div class="cat-name">${cat.split(' ')[0]}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(cadAmt/max*100).toFixed(0)}%;background:${CAT_CLR[cat]||'#888780'}"></div></div>
+        <div class="cat-amt">${fmt(dispAmt)}</div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;"><span style="font-size:10px;color:var(--tx3);">${pct}% of total</span></div>
+    </div>`;
+  }).join('')||'<div class="no-data">No data</div>';
+
+  const row=(k,cadV)=>`<div class="sum-list-item"><span>${k}</span><span>${fmt(getDispCatAmt(cadV))}</span></div>`;
   document.getElementById('coList').innerHTML=Object.entries(coMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>row(k,v)).join('')||'<div class="no-data">No data</div>';
   document.getElementById('fundList').innerHTML=Object.entries(fundMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>row(k,v)).join('')||'<div class="no-data">No data</div>';
   document.getElementById('typeList').innerHTML=Object.entries(typeMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>row(k,v)).join('')||'<div class="no-data">No data</div>';
+  renderRecurring(expenses);
 }
 
 // ══════════════════════════════════════════
@@ -1282,11 +1583,21 @@ function renderExport(){
 
 function buildWorkbook(data){
   const wb=XLSX.utils.book_new();
-  const hdr=['Date','Merchant','Currency','Amount','CAD Equiv.','Category','Company','Fund Source','Transaction Type','Trip/Tag','Receipt Source','Notes','Has Attachment'];
-  const rows=data.map(e=>[e.date,e.merchant,e.currency,e.amount,e.cadEquiv,e.category,e.company||'',e.fund||'',e.txType||'',e.trip||'',e.source||'',e.notes||'',attachments[e.id]?'Yes':'No']);
+  const dispCur=document.getElementById('fSumCurrency')?.value||'CAD';
+  const showConv=dispCur!=='local'&&dispCur!=='CAD';
+  const baseHdr=['Date','Merchant','Currency','Amount','CAD Equiv.'];
+  if(showConv) baseHdr.push(`${dispCur} Equiv. (historical)`);
+  const hdr=[...baseHdr,'Category','Company','Fund Source','Transaction Type','Trip/Tag','Receipt Source','Recurring','Frequency','Notes','Has Attachment'];
+  const rows=data.map(e=>{
+    const base=[e.date,e.merchant,e.currency,e.amount,e.cadEquiv];
+    if(showConv) base.push(parseFloat((e.cadEquiv*getConvRate(e.date,dispCur)).toFixed(2)));
+    return [...base,e.category,e.company||'',e.fund||'',e.txType||'',e.trip||'',e.source||'',e.recurring?'Yes':'No',e.recurFreq||'',e.notes||'',attachments[e.id]?'Yes':'No'];
+  });
   const tot=data.reduce((s,e)=>s+e.cadEquiv,0);
-  const ws=XLSX.utils.aoa_to_sheet([hdr,...rows,[],['TOTAL','','','',parseFloat(tot.toFixed(2)),'','','','','','','','']]);
-  ws['!cols']=[{wch:12},{wch:22},{wch:8},{wch:10},{wch:11},{wch:22},{wch:16},{wch:22},{wch:16},{wch:16},{wch:10},{wch:26},{wch:14}];
+  const totRow=['TOTAL','','','',parseFloat(tot.toFixed(2))];
+  if(showConv) totRow.push(parseFloat((tot*getConvRate(today(),dispCur)).toFixed(2)));
+  const ws=XLSX.utils.aoa_to_sheet([hdr,...rows,[],totRow]);
+  ws['!cols']=[{wch:12},{wch:24},{wch:8},{wch:10},{wch:11},{wch:13},{wch:20},{wch:16},{wch:22},{wch:16},{wch:16},{wch:10},{wch:10},{wch:12},{wch:26},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws,'Expenses');
   return wb;
 }
@@ -1336,13 +1647,59 @@ updateGemPill();
 // check if client ID already saved
 if(getClientId()){document.getElementById('clientIdInput').value=getClientId();document.getElementById('clientIdRow').style.display='block';}
 loadLocal();
+
+// ── SEED INITIAL EXPENSES (runs once) ──
+(function seedExpenses(){
+  const SEED_KEY='seeded_invert_v1';
+  if(localStorage.getItem(SEED_KEY)) return;
+  const seed=[
+    {id:'seed1',date:'2026-03-25',merchant:'Partnership structure advice',amount:997.5,currency:'CAD',cadEquiv:997.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
+    {id:'seed2',date:'2026-03-27',merchant:'BC Incorporation Application',amount:351.5,currency:'CAD',cadEquiv:351.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
+    {id:'seed3',date:'2026-03-28',merchant:'YVR to YTO for Fairfax on April 11 2026',amount:365.67,currency:'CAD',cadEquiv:365.67,category:'Travel',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed4',date:'2026-03-28',merchant:'YYZ Toronto Value Symposium April 14 2026',amount:125,currency:'USD',cadEquiv:parseFloat((125*1.38).toFixed(2)),category:'Events & Conferences',company:'Invert',fund:'PayPal',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed5',date:'2026-04-14',merchant:'Presto public transit Toronto',amount:40,currency:'CAD',cadEquiv:40,category:'Transportation',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed6',date:'2026-04-14',merchant:'The Keg Social',amount:50.4,currency:'CAD',cadEquiv:50.4,category:'Food & Dining',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed7',date:'2026-04-14',merchant:'FFH Annual Meeting',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed8',date:'2026-04-15',merchant:'Fairfax Shareholder Dinner',amount:400,currency:'CAD',cadEquiv:400,category:'Client Entertainment',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed9',date:'2026-04-16',merchant:'FFH Annual Meeting - Day 2',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
+    {id:'seed10',date:'2026-04-19',merchant:'Claude subscription',amount:93.41,currency:'CAD',cadEquiv:93.41,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
+    {id:'seed11',date:'2026-04-19',merchant:'Claude AI',amount:31.64,currency:'CAD',cadEquiv:31.64,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
+  ];
+  seed.forEach(e=>{if(!expenses.find(x=>x.id===e.id)) expenses.push(e);});
+  expenses.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem(SEED_KEY,'1');
+  persist(false);
+})();
+
+// ── SEED BATCH 2 — BC Co expenses ──
+(function seedBatch2(){
+  const SEED_KEY='seeded_bcco_v1';
+  if(localStorage.getItem(SEED_KEY)) return;
+  const seed=[
+    {id:'bcco1',date:'2026-02-21',merchant:'Good Investing Annual Membership',amount:828.24,currency:'CAD',cadEquiv:828.24,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'500 EUR converted to CAD',recurring:false,recurFreq:''},
+    {id:'bcco2',date:'2026-03-01',merchant:'Homer Dental - Invisalign',amount:2400,currency:'CAD',cadEquiv:2400,category:'Other',company:'BC Co',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco3',date:'2026-03-28',merchant:'Fat Mao Noodles with Jacob/Jay',amount:69.38,currency:'CAD',cadEquiv:69.38,category:'Food & Dining',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco4',date:'2026-03-29',merchant:'Parking for meeting around Costco',amount:2,currency:'CAD',cadEquiv:2,category:'Transportation',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco5',date:'2026-04-03',merchant:'Muji - home office items',amount:76.11,currency:'CAD',cadEquiv:76.11,category:'Office Supplies',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco6',date:'2026-04-05',merchant:'Fat Mao Noodles - dinner with client',amount:77.28,currency:'CAD',cadEquiv:77.28,category:'Client Entertainment',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco7',date:'2026-04-06',merchant:'Frontop signoff letters',amount:1356,currency:'CAD',cadEquiv:1356,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco8',date:'2026-04-08',merchant:'Frontop site visit - close 1107 permit',amount:1017,currency:'CAD',cadEquiv:1017,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco9',date:'2026-04-10',merchant:'Smoke alarm installation and inspection - ESA',amount:1500,currency:'CAD',cadEquiv:1500,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+    {id:'bcco10',date:'2026-12-06',merchant:'Microsoft 365 Basic',amount:11.3,currency:'CAD',cadEquiv:11.3,category:'Tech & Software',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:true,recurFreq:'monthly'},
+  ];
+  seed.forEach(e=>{if(!expenses.find(x=>x.id===e.id)) expenses.push(e);});
+  expenses.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem(SEED_KEY,'1');
+  persist(false);
+})();
+
 populateDropdowns();
 renderList();updateTotal();
 // render daily quote
 renderQOTD();
 // restore token and init GIS
 tryRestoreToken();
-setType('Reimbursable');setSrc('photo');
+setType('Capital Allocation/Reimbursable');setSrc('photo');
 </script>
 </body>
 </html>
