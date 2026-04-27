@@ -86,6 +86,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .b-alloc{background:var(--teal-l);color:var(--teal-t);}
 .b-personal{background:var(--gray-l);color:var(--gray-t);}
 .b-recurring{background:var(--amber-l);color:var(--amber-t);}
+/* Privacy mode — blur all amounts */
+.privacy-on .ei-amt,.privacy-on .ei-cad,.privacy-on .total-amt,
+.privacy-on .stat-val,.privacy-on .cat-amt,.privacy-on .sum-list-item span:last-child,
+.privacy-on .recur-item-amt,.privacy-on .recur-total-row span:last-child,
+.privacy-on .recur-section-hdr span:last-child{
+  filter:blur(6px);user-select:none;transition:filter 0.2s;
+}
+.privacy-on .ei-amt:hover,.privacy-on .stat-val:hover{filter:blur(0);}
 .recur-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border-radius:var(--r);margin-bottom:9px;border:0.5px solid var(--bd);}
 .recur-row label{font-size:13px;color:var(--tx);cursor:pointer;flex:1;}
 .recur-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--green);}
@@ -284,6 +292,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <h2>Expenses</h2>
       </div>
       <div class="header-right">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-bottom:2px;">
+          <button id="privacyBtn" onclick="togglePrivacy()" title="Toggle privacy mode" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;color:var(--tx3);">👁</button>
+        </div>
         <div class="total-amt" id="totalAmt">CAD 0.00</div>
         <div class="total-lbl">this month (CAD)</div>
       </div>
@@ -900,18 +911,36 @@ async function loadFromDrive(){
     const q=`name='${EXPENSES_FILE}' and '${driveFolderId}' in parents and trashed=false`;
     const sr=await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`);
     const sd=await sr.json();
-    if(!sd.files||!sd.files[0]) return;
+    if(!sd.files||!sd.files[0]){
+      // No Drive file yet — push local data up to Drive
+      showToast('First sync — saving local data to Drive...');
+      await syncToDrive();
+      return;
+    }
     const fileId=sd.files[0].id;
     const fr=await driveReq(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
     const data=await fr.json();
-    if(data.expenses) expenses=data.expenses;
+    // MERGE: combine Drive expenses + local expenses, deduplicate by id
+    const driveExpenses=data.expenses||[];
+    const localExpenses=expenses; // already loaded from localStorage
+    const merged=[...localExpenses];
+    driveExpenses.forEach(de=>{
+      if(!merged.find(e=>e.id===de.id)) merged.push(de);
+    });
+    merged.sort((a,b)=>b.date.localeCompare(a.date));
+    expenses=merged;
     if(data.attachmentIndex) window._driveAttIndex=data.attachmentIndex;
+    // push the merged result back to Drive so both sides are in sync
     persist(false);
+    await syncToDrive();
     renderList();updateTotal();
     populateDropdowns();
-    showToast('Loaded from Google Drive');
-    document.getElementById('syncMsg').textContent='Synced · '+new Date().toLocaleTimeString();
-  }catch(e){console.error('Load from Drive error',e);}
+    showToast(`Drive synced — ${merged.length} expenses loaded`);
+    document.getElementById('syncMsg').textContent='Merged & synced · '+new Date().toLocaleTimeString();
+  }catch(e){
+    console.error('Load from Drive error',e);
+    showToast('Drive load failed — using local data');
+  }
 }
 
 async function syncToDrive(){
@@ -1119,6 +1148,14 @@ function setType(t){
   txType=t;
   document.getElementById('btnR').className='type-btn'+(t==='Capital Allocation/Reimbursable'?' ar':'');
   document.getElementById('btnP').className='type-btn'+(t==='Personal'?' ap2':'');
+}
+
+function togglePrivacy(){
+  const app=document.querySelector('.app');
+  const btn=document.getElementById('privacyBtn');
+  const on=app.classList.toggle('privacy-on');
+  btn.textContent=on?'🙈':'👁';
+  btn.title=on?'Show amounts':'Hide amounts';
 }
 
 function switchTab(tab){
