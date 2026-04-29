@@ -929,6 +929,7 @@ async function loadFromDrive(){
     });
     merged.sort((a,b)=>b.date.localeCompare(a.date));
     expenses=merged;
+    mergeSeedExpenses(); // guarantee seeds always present after Drive load
     if(data.attachmentIndex) window._driveAttIndex=data.attachmentIndex;
     // push the merged result back to Drive so both sides are in sync
     persist(false);
@@ -1685,50 +1686,43 @@ updateGemPill();
 if(getClientId()){document.getElementById('clientIdInput').value=getClientId();document.getElementById('clientIdRow').style.display='block';}
 loadLocal();
 
-// ── SEED INITIAL EXPENSES (runs once) ──
-(function seedExpenses(){
-  const SEED_KEY='seeded_invert_v1';
-  if(localStorage.getItem(SEED_KEY)) return;
-  const seed=[
-    {id:'seed1',date:'2026-03-25',merchant:'Partnership structure advice',amount:997.5,currency:'CAD',cadEquiv:997.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
-    {id:'seed2',date:'2026-03-27',merchant:'BC Incorporation Application',amount:351.5,currency:'CAD',cadEquiv:351.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
-    {id:'seed3',date:'2026-03-28',merchant:'YVR to YTO for Fairfax on April 11 2026',amount:365.67,currency:'CAD',cadEquiv:365.67,category:'Travel',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed4',date:'2026-03-28',merchant:'YYZ Toronto Value Symposium April 14 2026',amount:125,currency:'USD',cadEquiv:parseFloat((125*1.38).toFixed(2)),category:'Events & Conferences',company:'Invert',fund:'PayPal',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed5',date:'2026-04-14',merchant:'Presto public transit Toronto',amount:40,currency:'CAD',cadEquiv:40,category:'Transportation',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed6',date:'2026-04-14',merchant:'The Keg Social',amount:50.4,currency:'CAD',cadEquiv:50.4,category:'Food & Dining',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed7',date:'2026-04-14',merchant:'FFH Annual Meeting',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed8',date:'2026-04-15',merchant:'Fairfax Shareholder Dinner',amount:400,currency:'CAD',cadEquiv:400,category:'Client Entertainment',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed9',date:'2026-04-16',merchant:'FFH Annual Meeting - Day 2',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:''},
-    {id:'seed10',date:'2026-04-19',merchant:'Claude subscription',amount:93.41,currency:'CAD',cadEquiv:93.41,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
-    {id:'seed11',date:'2026-04-19',merchant:'Claude AI',amount:31.64,currency:'CAD',cadEquiv:31.64,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:''},
-  ];
-  seed.forEach(e=>{if(!expenses.find(x=>x.id===e.id)) expenses.push(e);});
-  expenses.sort((a,b)=>b.date.localeCompare(a.date));
-  localStorage.setItem(SEED_KEY,'1');
-  persist(false);
-})();
+// ── GUARANTEED SEED DATA — always merges in, never skips ──
+// These are the canonical seeded expenses. They are merged by ID every load
+// so they survive Drive overwrites and localStorage clears.
+const SEED_EXPENSES=[
+  {id:'seed1',date:'2026-03-25',merchant:'Partnership structure advice',amount:997.5,currency:'CAD',cadEquiv:997.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'seed2',date:'2026-03-27',merchant:'BC Incorporation Application',amount:351.5,currency:'CAD',cadEquiv:351.5,category:'Other',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'seed3',date:'2026-03-28',merchant:'YVR to YTO for Fairfax on April 11 2026',amount:365.67,currency:'CAD',cadEquiv:365.67,category:'Travel',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed4',date:'2026-03-28',merchant:'YYZ Toronto Value Symposium April 14 2026',amount:125,currency:'USD',cadEquiv:172.5,category:'Events & Conferences',company:'Invert',fund:'PayPal',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed5',date:'2026-04-14',merchant:'Presto public transit Toronto',amount:40,currency:'CAD',cadEquiv:40,category:'Transportation',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed6',date:'2026-04-14',merchant:'The Keg Social',amount:50.4,currency:'CAD',cadEquiv:50.4,category:'Food & Dining',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed7',date:'2026-04-14',merchant:'FFH Annual Meeting',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed8',date:'2026-04-15',merchant:'Fairfax Shareholder Dinner',amount:400,currency:'CAD',cadEquiv:400,category:'Client Entertainment',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed9',date:'2026-04-16',merchant:'FFH Annual Meeting - Day 2',amount:90,currency:'CAD',cadEquiv:90,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'Fairfax Toronto',notes:'',recurring:false,recurFreq:''},
+  {id:'seed10',date:'2026-04-19',merchant:'Claude subscription',amount:93.41,currency:'CAD',cadEquiv:93.41,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'seed11',date:'2026-04-19',merchant:'Claude AI',amount:31.64,currency:'CAD',cadEquiv:31.64,category:'Tech & Software',company:'Invert',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco1',date:'2026-02-21',merchant:'Good Investing Annual Membership',amount:828.24,currency:'CAD',cadEquiv:828.24,category:'Membership',company:'Invert',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'500 EUR converted to CAD',recurring:true,recurFreq:'yearly'},
+  {id:'bcco2',date:'2026-03-01',merchant:'Homer Dental - Invisalign',amount:2400,currency:'CAD',cadEquiv:2400,category:'Other',company:'BC Co',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco3',date:'2026-03-28',merchant:'Fat Mao Noodles with Jacob/Jay',amount:69.38,currency:'CAD',cadEquiv:69.38,category:'Food & Dining',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco4',date:'2026-03-29',merchant:'Parking for meeting around Costco',amount:2,currency:'CAD',cadEquiv:2,category:'Transportation',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco5',date:'2026-04-03',merchant:'Muji - home office items',amount:76.11,currency:'CAD',cadEquiv:76.11,category:'Office Supplies',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco6',date:'2026-04-05',merchant:'Fat Mao Noodles - dinner with client',amount:77.28,currency:'CAD',cadEquiv:77.28,category:'Client Entertainment',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco7',date:'2026-04-06',merchant:'Frontop signoff letters',amount:1356,currency:'CAD',cadEquiv:1356,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco8',date:'2026-04-08',merchant:'Frontop site visit - close 1107 permit',amount:1017,currency:'CAD',cadEquiv:1017,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco9',date:'2026-04-10',merchant:'Smoke alarm installation and inspection - ESA',amount:1500,currency:'CAD',cadEquiv:1500,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
+  {id:'bcco10',date:'2026-12-06',merchant:'Microsoft 365 Basic',amount:11.3,currency:'CAD',cadEquiv:11.3,category:'Tech & Software',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:true,recurFreq:'monthly'},
+];
 
-// ── SEED BATCH 2 — BC Co expenses ──
-(function seedBatch2(){
-  const SEED_KEY='seeded_bcco_v1';
-  if(localStorage.getItem(SEED_KEY)) return;
-  const seed=[
-    {id:'bcco1',date:'2026-02-21',merchant:'Good Investing Annual Membership',amount:828.24,currency:'CAD',cadEquiv:828.24,category:'Events & Conferences',company:'Invert',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'500 EUR converted to CAD',recurring:false,recurFreq:''},
-    {id:'bcco2',date:'2026-03-01',merchant:'Homer Dental - Invisalign',amount:2400,currency:'CAD',cadEquiv:2400,category:'Other',company:'BC Co',fund:'Personal Credit Card - Amex',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco3',date:'2026-03-28',merchant:'Fat Mao Noodles with Jacob/Jay',amount:69.38,currency:'CAD',cadEquiv:69.38,category:'Food & Dining',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco4',date:'2026-03-29',merchant:'Parking for meeting around Costco',amount:2,currency:'CAD',cadEquiv:2,category:'Transportation',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco5',date:'2026-04-03',merchant:'Muji - home office items',amount:76.11,currency:'CAD',cadEquiv:76.11,category:'Office Supplies',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco6',date:'2026-04-05',merchant:'Fat Mao Noodles - dinner with client',amount:77.28,currency:'CAD',cadEquiv:77.28,category:'Client Entertainment',company:'BC Co',fund:'Sha Credit Card - paid back in cash',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco7',date:'2026-04-06',merchant:'Frontop signoff letters',amount:1356,currency:'CAD',cadEquiv:1356,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco8',date:'2026-04-08',merchant:'Frontop site visit - close 1107 permit',amount:1017,currency:'CAD',cadEquiv:1017,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco9',date:'2026-04-10',merchant:'Smoke alarm installation and inspection - ESA',amount:1500,currency:'CAD',cadEquiv:1500,category:'Other',company:'BC Co',fund:'Wealthsimple',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:false,recurFreq:''},
-    {id:'bcco10',date:'2026-12-06',merchant:'Microsoft 365 Basic',amount:11.3,currency:'CAD',cadEquiv:11.3,category:'Tech & Software',company:'BC Co',fund:'Personal Credit Card',txType:'Capital Allocation/Reimbursable',source:'manual',trip:'',notes:'',recurring:true,recurFreq:'monthly'},
-  ];
-  seed.forEach(e=>{if(!expenses.find(x=>x.id===e.id)) expenses.push(e);});
+function mergeSeedExpenses(){
+  SEED_EXPENSES.forEach(seed=>{
+    if(!expenses.find(e=>e.id===seed.id)) expenses.push(seed);
+  });
   expenses.sort((a,b)=>b.date.localeCompare(a.date));
-  localStorage.setItem(SEED_KEY,'1');
-  persist(false);
-})();
+}
+
+loadLocal();
+mergeSeedExpenses(); // always ensure all seeded expenses exist
+persist(false);      // save merged state to localStorage immediately
 
 populateDropdowns();
 renderList();updateTotal();
